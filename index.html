@@ -1,14 +1,22 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-	<meta lang="en">
-	<title>Game Of Life</title>
-	<link rel="stylesheet" type="text/css" href="css/life.css">
-	<script src="https://code.jquery.com/jquery-2.2.2.min.js" integrity="sha256-36cp2Co+/62rEAAYHLmRCPIych47CvdM+uTBJwSzWjI=" crossorigin="anonymous"></script>
+    <meta charset="UTF-8">
+
+    <title>Conway's Game of Life</title>
+    <script src="https://code.jquery.com/jquery-2.2.2.min.js" integrity="sha256-36cp2Co+/62rEAAYHLmRCPIych47CvdM+uTBJwSzWjI=" crossorigin="anonymous"></script>
+    <link rel="stylesheet" type="text/css" href="css/life.css">
 </head>
 <body>
-	<div></div>
-	<button onclick="tick(field)">go</button>
+    <div class="container">
+    	<div id="gol"></div>
+		<button id="start">Start</button>
+		<button id="stop">Stop</button>
+		Generation: <label id="genLabel">0</label>
+		Population: <label id="popLabel">0</label>
+        <hr/>
+        2016 - Andrey Tatarnikov - <a href="https://github.com/somepad/game-of-life" target="_blank">GitHub</a>
+    </div>
 	<script type="text/javascript" src="js/life.js"></script>
 </body>
 </html>

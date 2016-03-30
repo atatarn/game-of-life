@@ -1,9 +1,17 @@
 body {
-    background: lightblue;
+	font-size: 16px;
+	font-family: Candara, Trebuchet MS, Arial, Sans-serif;
+	background: lightblue;
 }
-
+*{
+	box-sizing: border-box;
+}
+.container{
+	width: 480px;
+	margin: 25px auto;
+	background: #e3e3e3;
+	padding: 15px;
+}
 canvas {
     background: #fff;
-    //background:transparent;
-    margin: 20px;
 }
