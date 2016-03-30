@@ -20,7 +20,7 @@ $("#stop").click(function() {
 	timer = null
 });
 
-$('#mainC').mousemove(function(e){
+$('#mainC').on('mousemove', function(e){
 	if (e.buttons === 1)
 		field.vitalize(
 			Math.floor((e.pageX-$('#mainC').offset().left) / cellSize),
@@ -28,6 +28,16 @@ $('#mainC').mousemove(function(e){
 			true
 		);
 });
+$('#mainC').on('touchmove', function(e){
+	e.preventDefault();
+	var touch = e.originalEvent.touches[0];
+	field.vitalize(
+			Math.floor((touch.pageX-$('#mainC').offset().left) / cellSize),
+			Math.floor((touch.pageY-$('#mainC').offset().top) / cellSize),
+			true
+		);
+});
+
 
 function tick(field) {
 	genCount++;
