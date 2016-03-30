@@ -1,0 +1,9 @@
+body {
+    background: lightblue;
+}
+
+canvas {
+    background: #fff;
+    //background:transparent;
+    margin: 20px;
+}
