@@ -2,21 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-
     <title>Conway's Game of Life</title>
     <script src="https://code.jquery.com/jquery-2.2.2.min.js" integrity="sha256-36cp2Co+/62rEAAYHLmRCPIych47CvdM+uTBJwSzWjI=" crossorigin="anonymous"></script>
     <link rel="stylesheet" type="text/css" href="css/life.css">
 </head>
 <body>
     <div class="container">
-    	<div id="gol"></div>
-		<button id="start">Start</button>
-		<button id="stop">Stop</button>
-		Generation: <label id="genLabel">0</label>
-		Population: <label id="popLabel">0</label>
+        <div id="gol"></div>
+        <button class="evoCtrl" id="start">Start</button>
+        <button class="evoCtrl" id="stop">Stop</button>
+        <button class="evoCtrl" id="reset">Reset</button>
+        <button class="evoCtrl" id="origin">log Origin</button>
+        Generation: <label id="genLabel">0</label>
+        Population: <label id="popLabel">0</label>
+        <hr/>
+        <button class="preset" id="GGG">Gosper Glider Gun</button>
         <hr/>
         2016 - Andrey Tatarnikov - <a href="https://github.com/somepad/game-of-life" target="_blank">GitHub</a>
     </div>
-	<script type="text/javascript" src="js/life.js"></script>
+    <script type="text/javascript" src="js/life.js"></script>
 </body>
 </html>

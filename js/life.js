@@ -1,127 +1,167 @@
-var gridDimension = 30,
-	gridSize = 450,
-	cellSize = gridSize / gridDimension,
-	entityDim = cellSize/1.5,
-	genCount = 0,
-	ctx = init(),
-	field = new Field(ctx),
-	timer = null,
-	interval = 300;
+"use strict";
 
-$("#start").click(function() {
-	if (timer !== null) return;
-	timer = setInterval(function () {
-		tick(field);
-	}, interval);
+// settings
+var gridDimension = 56, // (cells)
+		cellSize = 8, // (px)
+    interval = 75; // (ms)
+
+// engines
+var cvs = new Canvas(gridDimension, cellSize);
+var field = new Field(cvs, gridDimension, cellSize);
+var evo = new Evolution(cvs, field, interval);
+var preset = new Preset(evo);
+
+// http://codepen.io/pen/?editors=011
+// http://appsynergy.net/gameoflife
+
+// presets controls
+$('.preset').click(function(){
+	preset[$(this).attr('id')]();
 });
 
-$("#stop").click(function() {
-	clearInterval(timer);
-	timer = null
+// base controls
+$('.evoCtrl').click(function(){
+	evo[$(this).attr('id')]();
 });
 
-$('#mainC').on('mousemove', function(e){
+$('#cvs').on('mousemove', function(e){
 	if (e.buttons === 1)
 		field.vitalize(
-			Math.floor((e.pageX-$('#mainC').offset().left) / cellSize),
-			Math.floor((e.pageY-$('#mainC').offset().top) / cellSize),
+			Math.floor((e.pageX-$('#cvs').offset().left) / cellSize),
+			Math.floor((e.pageY-$('#cvs').offset().top) / cellSize),
 			true
 		);
 });
-$('#mainC').on('touchmove', function(e){
+$('#cvs').on('click', function(e){
+	field.vitalize(
+		Math.floor((e.pageX-$('#cvs').offset().left) / cellSize),
+		Math.floor((e.pageY-$('#cvs').offset().top) / cellSize),
+		true
+	);
+});
+$('#cvs').on('touchmove', function(e){
 	e.preventDefault();
 	var touch = e.originalEvent.touches[0];
 	field.vitalize(
-			Math.floor((touch.pageX-$('#mainC').offset().left) / cellSize),
-			Math.floor((touch.pageY-$('#mainC').offset().top) / cellSize),
+			Math.floor((touch.pageX-$('#cvs').offset().left) / cellSize),
+			Math.floor((touch.pageY-$('#cvs').offset().top) / cellSize),
 			true
 		);
 });
 
-
-function tick(field) {
-	genCount++;
-	var popCount = 0,
-		newBorns = new Array();
-	field.loopCells(function(cell){
-		var aliveNeighbors = field.aliveNeighbors(cell.iX, cell.iY);
-		// живое: выживет при 2 или 3 соседях
-		// мертвое: оживет при 3 соседях
-		if (aliveNeighbors === 3 || (aliveNeighbors === 2 && cell.alive)) {
-			newBorns.push(cell);
-			popCount++;
-		}
-	});
-	field.clear();
-	field.newMap();
-	newBorns.forEach(function(cell){
-		field.vitalize(cell.iX, cell.iY);
-	});
-	field.draw();
-	$('#genLabel').text(genCount);
-	$('#popLabel').text(popCount);
+function Preset(evolution){
+	var p = this;
+  p.e = evolution;
+	p.GGG = function(){
+  	p.go([[2,26],[2,27],[3,26],[3,27],[12,26],[12,27],[12,28],[13,25],[13,29],[14,24],[14,30],[15,24],[15,30],[16,27],[17,25],[17,29],[18,26],[18,27],[18,28],[19,27],[22,24],[22,25],[22,26],[23,24],[23,25],[23,26],[24,23],[24,27],[26,22],[26,23],[26,27],[26,28],[36,24],[36,25],[37,24],[37,25]]);
+  };
+  p.go = function(t) {
+  	p.e.reset();
+    t.map(function(c){p.e.field.vitalize(c[0], c[1], true);});
+  };
 }
-function Field(ctx) {
-	this.ctx = ctx;
-	this.history = new Array();
-	this.newMap = function(){
-		var Map = new Array(gridDimension);
-		for (var x = 0; x < gridDimension; x++) {
-			Map[x] = new Array(gridDimension);
-			for (var y = 0; y < gridDimension; y++) {
-				Map[x][y] = {
-					cX: cellSize/2 + cellSize*x - entityDim/2,
-					cY: cellSize/2 + cellSize*y - entityDim/2,
-					iX: x,
-					iY: y,
-					alive: false
-				};
-			}
-		}
-		this.history.push(Map);
-	};
-	this.currentMap = function(){return this.history[this.history.length-1];};
-	this.vitalize = function(x,y,draw) {
-		this.currentMap()[x][y].alive = true;
-		if (draw)
-			drawCell(
-				this.currentMap()[x][y].cX,
-				this.currentMap()[x][y].cY,
-				this.ctx
-			);
-	};
-	this.loopCells = function(callback) {
-		this.currentMap().map(function(col){
-			col.map(function(cell){
-				callback(cell);
-			});
-		});
-	};
-	function drawCell(cX, cY, ctx) {
-		ctx.beginPath();
-		ctx.rect(cX, cY, entityDim, entityDim);
-		ctx.fill();
-		ctx.closePath();
-	}
-	this.draw = function(){
-		this.loopCells(function(cell){
-			if (cell.alive) {
-				drawCell(cell.cX, cell.cY, this.ctx)
-			}
-		});
-	};
-	this.clear = function(){
-		this.loopCells(function(cell){
-			if (cell.alive)
-				this.ctx.clearRect(
-					cell.iX*cellSize+2,
-					cell.iY*cellSize+2,
-					cellSize-2,
-					cellSize-2
-				);
-		});
-	};
-	this.neighbors = function(x,y){
+
+// Evolution engine
+function Evolution(canvas, field, interval){
+	var e = this;
+  e.canvas = canvas;
+  e.field = field;
+  e.interval = interval;
+  e.timer = null;
+  e.genCount = 0;
+  e.start = function(){
+  	if (e.timer) return;
+    e.timer = setInterval(function(){ e.tick(); }, e.interval);
+  };
+  e.stop = function(){
+  	clearInterval(e.timer);
+    e.timer = null;
+  };
+  e.tick = function(){
+  	var popCount = 0;
+    var newBorns = new Array();
+    e.genCount++;
+    e.field.loopCells(function(cell){
+    	var aliveNeighbors = e.field.aliveNeighbors(cell.iX, cell.iY);
+      // живое: выживет при 2 или 3 живых соседях
+      // мертвое: оживет при 3 живых соседях
+      if (aliveNeighbors === 3 || (aliveNeighbors === 2 && cell.alive)) {
+      	newBorns.push(cell);
+        popCount++;
+      }
+    });
+    e.canvas.clear();
+    e.field.newMap();
+    newBorns.forEach(function(cell){
+    	e.field.vitalize(cell.iX, cell.iY)
+    });
+    e.field.generate();
+    $('#genLabel').text(e.genCount);
+		$('#popLabel').text(popCount);
+  };
+  e.reset = function(){
+  	e.stop();
+    e.genCount = 0;
+    e.canvas.clear();
+    e.field.history = new Array();
+    e.field.newMap();
+    e.field.generate();
+    $('#genLabel').text(e.genCount);
+		$('#popLabel').text('0');
+  };
+  e.origin = function(){
+  	var o  = '';
+    e.field.history[0].map(function(col){
+    	col.map(function(cell){
+      	//if (cell.alive) console.log(cell.cX + ', ' + cell.cY);
+        if (cell.alive) o += '[' + cell.iX + ', ' + cell.iY + ']';
+      });
+    });
+    console.log('['+o+']');
+  };
+}
+
+// Field engine
+function Field(canvas, gridDimension, cellSize) {
+	var f = this;
+  f.canvas = canvas;
+  f.gridDimension = gridDimension;
+  f.cellSize = cellSize;
+  f.history = new Array();
+  f.newMap = function(){
+  	var Map = new Array(gridDimension);
+    for (var x = 0; x < gridDimension; x++) {
+    	Map[x] = new Array(gridDimension);
+      for (var y = 0; y < gridDimension; y++) {
+      	Map[x][y] = {
+        	cX: f.cellSize*x,
+          cY: f.cellSize*y,
+          iX: x,
+          iY: y,
+          alive: false
+        };
+      }
+    }
+    f.history.push(Map);
+  };
+  f.currentMap = function(){return f.history[f.history.length-1];};
+  f.vitalize = function(x, y, draw) {
+  	f.currentMap()[x][y].alive = true;
+    if (draw) f.canvas.drawCell(f.currentMap()[x][y].cX, f.currentMap()[x][y].cY, true);
+  }
+  f.loopCells = function(cb){
+  	f.currentMap().map(function(col){
+    	col.map(function(cell){
+      	cb(cell);
+      });
+    });
+  };
+  f.generate = function(){
+  	f.loopCells(function(cell){
+    	f.canvas.drawCell(cell.cX, cell.cY, cell.alive);
+    });
+  };
+	f.neighbors = function(x,y){
 		var dirty = [
 			{iX: x-1, iY: y},
 			{iX: x-1, iY: y-1},
@@ -134,47 +174,39 @@ function Field(ctx) {
 		];
 		return dirty.map(function(cell){
 			return {
-				iX: cell.iX === gridDimension ? 0 : cell.iX === -1 ? gridDimension-1 : cell.iX,
-				iY: cell.iY === gridDimension ? 0 : cell.iY === -1 ? gridDimension-1 : cell.iY
+				iX: cell.iX === f.gridDimension ? 0 : cell.iX === -1 ? f.gridDimension-1 : cell.iX,
+				iY: cell.iY === f.gridDimension ? 0 : cell.iY === -1 ? f.gridDimension-1 : cell.iY
 			};
 		});
 	};
-	this.aliveNeighbors = function(x,y) {
+	f.aliveNeighbors = function(x,y) {
 		var count = 0;
-		this.neighbors(x,y).forEach(function(cell){
-			if (this.currentMap()[cell.iX][cell.iY].alive)
-				count++;
+		f.neighbors(x,y).forEach(function(cell){
+			if (f.currentMap()[cell.iX][cell.iY].alive)
+			count++;
 		}, this);
 		return count;
 	};
-	this.newMap();
+  f.newMap();
+  f.generate();
 }
 
-function init() {
-	var bgcanvas = $('<canvas/>').attr({width: gridSize, height: gridSize}),
-		bgctx = bgcanvas.get(0).getContext('2d'),
-		x = 0, y = 0;
-	while (x <= gridSize) {
-		bgctx.beginPath();
-		bgctx.moveTo(x, 0);
-		bgctx.lineTo(x, gridSize);
-		bgctx.stroke();
-		x+=cellSize;
-	}
-	while (y <= gridSize) {
-		bgctx.beginPath();
-		bgctx.moveTo(0, y);
-		bgctx.lineTo(gridSize, y);
-		bgctx.stroke();
-		y+=cellSize;
-	}
-
-	var canvas = $('<canvas/>').attr({
-		id: "mainC",
-		width: gridSize,
-		height: gridSize
-	}).css(
-		{'background-image':"url(" + bgcanvas.get(0).toDataURL("image/png")+ ")"}
-	).appendTo('#gol');
-	return canvas.get(0).getContext('2d');
+// Canvas engine
+function Canvas(gridDimension, cellSize) {
+	var c = this;
+  c.cellSize = cellSize;
+  c.gridDimension = gridDimension;
+  var canvas = $('<canvas/>').attr({id: "cvs", width: c.gridDimension*c.cellSize, height: c.gridDimension*c.cellSize }).appendTo('#gol');
+  c.ctx = canvas.get(0).getContext('2d');
+  c.ctx.strokeStyle = '#e1e1e1';
+  c.ctx.fillStyle = 'cadetblue';
+  c.drawCell = function(cX, cY, alive) {
+  	c.ctx.beginPath();
+    c.ctx.rect(cX, cY, c.cellSize, c.cellSize);
+    alive ? c.ctx.fill() : c.ctx.stroke();
+    c.ctx.closePath();
+  };
+  c.clear = function(){
+  	c.ctx.clearRect(0, 0, c.gridDimension*c.cellSize, c.gridDimension*c.cellSize);
+  };
 }
